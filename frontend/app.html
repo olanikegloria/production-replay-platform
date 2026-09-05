@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Production Replay Platform</title>
+  <title>ReplaySafe — App</title>
   <style>
     :root {
       --bg: #120f14;
@@ -13,6 +13,7 @@
       --accent: #d4785a;
       --border: #342a38;
       --ok: #5ecf9a;
+      --warn: #e0a35a;
     }
     * { box-sizing: border-box; }
     body {
@@ -22,9 +23,21 @@
       color: var(--text);
       min-height: 100vh;
     }
-    header { padding: 1.5rem 2rem 0.75rem; border-bottom: 1px solid var(--border); }
+    header {
+      padding: 1.25rem 2rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: flex-start;
+    }
     header h1 { margin: 0; font-size: 1.45rem; font-weight: 600; }
     header p { margin: 0.4rem 0 0; color: var(--muted); font-family: "Source Sans 3", sans-serif; }
+    .auth-box {
+      display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center;
+      font-size: 0.85rem; font-family: "Source Sans 3", sans-serif;
+    }
+    .auth-box input {
+      background: #120e14; border: 1px solid var(--border); color: var(--text);
+      border-radius: 6px; padding: 0.4rem 0.55rem; width: 9.5rem; font: inherit;
+    }
     main {
       padding: 1rem 2rem 2rem;
       display: grid;
@@ -52,7 +65,7 @@
     }
     button.secondary { background: #3a2e40; color: var(--text); }
     .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
-    textarea, input, select {
+    textarea, select {
       width: 100%;
       background: #120e14;
       border: 1px solid var(--border);
@@ -74,12 +87,26 @@
     }
     .meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
     .ok { color: var(--ok); }
+    .warn { color: var(--warn); }
+    a.nav { color: var(--muted); font-size: 0.85rem; text-decoration: none; }
   </style>
 </head>
 <body>
   <header>
-    <h1>Production Replay</h1>
-    <p>Submit an HTTP incident → redact secrets → pack / brief / replay scaffold.</p>
+    <div>
+      <h1>Production Replay</h1>
+      <p>Submit → redact → pack / brief / scaffold. <a class="nav" href="/">← Landing</a></p>
+      <div class="meta" id="usageMeta">Usage: sign in or use demo token.</div>
+    </div>
+    <div class="auth-box">
+      <input id="email" placeholder="email" value="buyer@acme.dev" />
+      <input id="password" type="password" placeholder="password" value="demo-pass" />
+      <input id="org" placeholder="org" value="Acme Sec" />
+      <button class="secondary" id="btnSignup">Signup</button>
+      <button class="secondary" id="btnLogin">Login</button>
+      <button class="secondary" id="btnDemo">Use demo</button>
+      <button class="secondary" id="btnTeam">Upgrade Team (stub)</button>
+    </div>
   </header>
   <main>
     <section>
@@ -103,6 +130,9 @@
     </section>
   </main>
   <script>
+    const TOKEN_KEY = "replaysafe_token";
+    let token = localStorage.getItem(TOKEN_KEY) || "demo";
+
     const SAMPLE = {
       method: "POST",
       path: "/api/checkout",
@@ -127,10 +157,79 @@
       metadata: { service: "checkout-api", version: "1.4.2" }
     };
 
+    function authHeaders(json = true) {
+      const h = { Authorization: `Bearer ${token}` };
+      if (json) h["Content-Type"] = "application/json";
+      return h;
+    }
+
+    async function refreshUsage() {
+      try {
+        const res = await fetch("/billing/usage", { headers: authHeaders(false) });
+        if (!res.ok) throw new Error();
+        const u = await res.json();
+        const lim = u.incidents_limit == null ? "∞" : u.incidents_limit;
+        document.getElementById("usageMeta").textContent =
+          `Plan ${u.plan} · incidents ${u.incidents_used}/${lim} (${u.month}) · token ${token.slice(0, 12)}…`;
+      } catch {
+        document.getElementById("usageMeta").textContent = "Auth required for usage meter.";
+      }
+    }
+
     document.getElementById("btnSample").onclick = () => {
       document.getElementById("payload").value = JSON.stringify(SAMPLE, null, 2);
     };
     document.getElementById("btnSample").click();
+
+    async function signup() {
+      const res = await fetch("/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: document.getElementById("email").value,
+          password: document.getElementById("password").value,
+          org_name: document.getElementById("org").value,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.detail || "signup failed"); return; }
+      token = data.token;
+      localStorage.setItem(TOKEN_KEY, token);
+      await refreshUsage();
+    }
+
+    async function login() {
+      const res = await fetch("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: document.getElementById("email").value,
+          password: document.getElementById("password").value,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.detail || "login failed"); return; }
+      token = data.token;
+      localStorage.setItem(TOKEN_KEY, token);
+      await refreshUsage();
+    }
+
+    function useDemo() {
+      token = "demo";
+      localStorage.setItem(TOKEN_KEY, token);
+      refreshUsage();
+    }
+
+    async function upgradeTeam() {
+      const res = await fetch("/billing/checkout-session", {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ plan: "team" }),
+      });
+      const data = await res.json();
+      alert(data.message || JSON.stringify(data));
+      await refreshUsage();
+    }
 
     async function submit() {
       let body;
@@ -138,19 +237,27 @@
       catch (e) { alert("Invalid JSON"); return; }
       const res = await fetch("/incidents", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(),
         body: JSON.stringify(body),
       });
       const data = await res.json();
+      if (res.status === 402) {
+        document.getElementById("submitMeta").innerHTML =
+          `<span class="warn">Quota exceeded — upgrade via checkout stub.</span>`;
+        document.getElementById("out").textContent = JSON.stringify(data, null, 2);
+        return;
+      }
       document.getElementById("submitMeta").innerHTML =
         res.ok ? `<span class="ok">Stored ${data.incident.id} (redacted)</span>` : (data.detail || "failed");
       document.getElementById("out").textContent = JSON.stringify(data, null, 2);
       await refresh();
+      await refreshUsage();
       if (data.incident?.id) document.getElementById("incidentSelect").value = data.incident.id;
     }
 
     async function refresh() {
-      const res = await fetch("/incidents");
+      const res = await fetch("/incidents", { headers: authHeaders(false) });
+      if (!res.ok) return;
       const data = await res.json();
       const sel = document.getElementById("incidentSelect");
       sel.innerHTML = (data.incidents || []).map(i =>
@@ -161,14 +268,14 @@
     async function brief() {
       const id = document.getElementById("incidentSelect").value;
       if (!id) return;
-      const res = await fetch(`/incidents/${id}/brief`, { method: "POST" });
+      const res = await fetch(`/incidents/${id}/brief`, { method: "POST", headers: authHeaders(false) });
       document.getElementById("out").textContent = JSON.stringify(await res.json(), null, 2);
     }
 
     async function scaffold() {
       const id = document.getElementById("incidentSelect").value;
       if (!id) return;
-      const res = await fetch(`/incidents/${id}/replay-scaffold`, { method: "POST" });
+      const res = await fetch(`/incidents/${id}/replay-scaffold`, { method: "POST", headers: authHeaders(false) });
       document.getElementById("out").textContent = JSON.stringify(await res.json(), null, 2);
     }
 
@@ -176,6 +283,11 @@
     document.getElementById("btnRefresh").onclick = refresh;
     document.getElementById("btnBrief").onclick = brief;
     document.getElementById("btnScaffold").onclick = scaffold;
+    document.getElementById("btnSignup").onclick = signup;
+    document.getElementById("btnLogin").onclick = login;
+    document.getElementById("btnDemo").onclick = useDemo;
+    document.getElementById("btnTeam").onclick = upgradeTeam;
+    refreshUsage();
     refresh();
   </script>
 </body>

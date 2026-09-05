@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy Policy — ReplaySafe</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+      background: #f6f0f2;
+      color: #1a1218;
+      line-height: 1.55;
+    }
+    main { width: min(720px, calc(100% - 2rem)); margin: 2rem auto 3rem; }
+    a { color: #6b2d45; }
+    h1 { font-family: "Fraunces", Georgia, serif; letter-spacing: -0.03em; }
+    p, li { color: #4a3a44; }
+    .muted { color: #6a5963; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <p><a href="/">← ReplaySafe</a></p>
+    <h1>Privacy Policy</h1>
+    <p class="muted">Stub — last updated September 5, 2026. Not legal advice.</p>
+    <p>How ReplaySafe handles information in this foundation build.</p>
+    <h2>Data we store</h2>
+    <ul>
+      <li><strong>Account data:</strong> email, password hash, organization name, plan, API tokens.</li>
+      <li><strong>Usage metering:</strong> incident create counts per organization per calendar month.</li>
+      <li><strong>Incident packs:</strong> redacted request metadata, headers, bodies, and logs you submit.</li>
+    </ul>
+    <h2>Storage</h2>
+    <p>
+      Local deployments persist JSON under <code>DATA_DIR</code> (incident packs) and
+      <code>accounts.json</code> beside that store. No paid telemetry vendors are required.
+    </p>
+    <h2>Sharing</h2>
+    <p>
+      We do not sell personal data. The demo Bearer token <code>demo</code> is for local evaluation only.
+    </p>
+    <h2>Your choices</h2>
+    <p>Contact the operator of your deployment for deletion or export. Replace this stub before processing customer PII in production.</p>
+  </main>
+</body>
+</html>
