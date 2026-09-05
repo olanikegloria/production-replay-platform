@@ -31,16 +31,6 @@ DEMO_TOKEN = "demo"
 DEMO_ORG_ID = "org_demo"
 DEMO_EMAIL = "demo@localhost"
 
-# Incident creates per calendar month (None = unlimited)
-PLAN_INCIDENT_LIMITS: dict[str, int | None] = {
-    "free": 25,
-    "team": 500,
-    "business": None,
-}
-
-PLAN_SEATS: dict[str, int] = {"free": 1, "team": 15, "business": 60}
-PLAN_PRICES: dict[str, int] = {"free": 0, "team": 129, "business": 349}
-
 
 def _utcnow() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -84,6 +74,8 @@ class AccountsStore:
         self.orgs = raw.get("orgs", {})
         self.users = raw.get("users", {})
         self.tokens = raw.get("tokens", {})
+        for org in self.orgs.values():
+            org.pop("plan", None)
         self._ensure_demo()
         self._persist()
 
@@ -92,7 +84,6 @@ class AccountsStore:
             self.orgs[DEMO_ORG_ID] = {
                 "id": DEMO_ORG_ID,
                 "name": "Demo Org",
-                "plan": "business",
                 "created_at": _utcnow(),
                 "usage": {},
             }
@@ -133,7 +124,6 @@ class AccountsStore:
         self.orgs[org_id] = {
             "id": org_id,
             "name": org_name.strip(),
-            "plan": "free",
             "created_at": now,
             "usage": {},
         }
@@ -154,7 +144,6 @@ class AccountsStore:
             "email": key,
             "org_id": org_id,
             "org_name": org_name.strip(),
-            "plan": "free",
             "token": token,
         }
 
@@ -176,7 +165,6 @@ class AccountsStore:
             "email": key,
             "org_id": user["org_id"],
             "org_name": org["name"],
-            "plan": org.get("plan", "free"),
             "token": token,
         }
 
@@ -194,31 +182,17 @@ class AccountsStore:
             "user_email": entry["user_email"],
             "org_id": entry["org_id"],
             "org": org,
-            "plan": org.get("plan", "free"),
         }
 
     def usage_snapshot(self, org_id: str) -> dict[str, Any]:
         org = self.orgs[org_id]
-        plan = org.get("plan", "free")
         month = _month_key()
         used = int(org.get("usage", {}).get(month, {}).get("incidents", 0))
-        limit = PLAN_INCIDENT_LIMITS.get(plan, PLAN_INCIDENT_LIMITS["free"])
         return {
             "org_id": org_id,
-            "plan": plan,
             "month": month,
             "incidents_used": used,
-            "incidents_limit": limit,
-            "seats_limit": PLAN_SEATS.get(plan, 1),
-            "price_usd": PLAN_PRICES.get(plan, 0),
         }
-
-    def check_incident_quota(self, org_id: str) -> dict[str, Any]:
-        snap = self.usage_snapshot(org_id)
-        limit = snap["incidents_limit"]
-        if limit is not None and snap["incidents_used"] >= limit:
-            return {**snap, "allowed": False}
-        return {**snap, "allowed": True}
 
     def record_incident(self, org_id: str) -> dict[str, Any]:
         org = self.orgs[org_id]
@@ -226,13 +200,6 @@ class AccountsStore:
         usage = org.setdefault("usage", {})
         bucket = usage.setdefault(month, {"incidents": 0})
         bucket["incidents"] = int(bucket.get("incidents", 0)) + 1
-        self._persist()
-        return self.usage_snapshot(org_id)
-
-    def set_plan(self, org_id: str, plan: str) -> dict[str, Any]:
-        if plan not in PLAN_INCIDENT_LIMITS:
-            raise ValueError(f"Unknown plan: {plan}")
-        self.orgs[org_id]["plan"] = plan
         self._persist()
         return self.usage_snapshot(org_id)
 

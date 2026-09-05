@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
-from .accounts import PLAN_PRICES, accounts
+from .accounts import accounts
 from .auth import AuthContext
 from .redaction import redact_incident
 from .replay import build_brief, build_replay_scaffold
@@ -44,12 +43,6 @@ class SignupRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: str
     password: str
-
-
-class CheckoutRequest(BaseModel):
-    plan: Literal["team", "business"] = "team"
-    success_url: str | None = None
-    cancel_url: str | None = None
 
 
 @app.on_event("startup")
@@ -103,60 +96,12 @@ def auth_login(body: LoginRequest) -> dict[str, Any]:
         raise HTTPException(401, str(exc)) from exc
 
 
-@app.get("/billing/usage")
-def billing_usage(auth: AuthContext) -> dict[str, Any]:
+@app.get("/usage")
+def usage(auth: AuthContext) -> dict[str, Any]:
     return accounts.usage_snapshot(auth["org_id"])
 
 
-@app.post("/billing/checkout-session")
-def billing_checkout(body: CheckoutRequest, auth: AuthContext) -> dict[str, Any]:
-    stripe_key = os.environ.get("STRIPE_SECRET_KEY", "").strip()
-    plan = body.plan
-    if stripe_key:
-        return {
-            "mode": "stripe_ready",
-            "message": "Stripe key detected — wire stripe.checkout.Session.create here.",
-            "plan": plan,
-            "org_id": auth["org_id"],
-            "price_usd": PLAN_PRICES[plan],
-            "success_url": body.success_url or "/app?checkout=success",
-            "cancel_url": body.cancel_url or "/?checkout=cancel",
-        }
-    snap = accounts.set_plan(auth["org_id"], plan)
-    return {
-        "mode": "stub",
-        "checkout_url": f"/app?checkout=success&plan={plan}",
-        "message": "Stub checkout: plan upgraded locally. Set STRIPE_SECRET_KEY for real charges.",
-        "plan": plan,
-        "org_id": auth["org_id"],
-        "price_usd": PLAN_PRICES[plan],
-        "usage": snap,
-        "env": {
-            "STRIPE_SECRET_KEY": "optional; when set, stub upgrade is skipped for real Checkout wiring",
-            "STRIPE_PRICE_TEAM": "optional Price ID for Team ($129/mo)",
-            "STRIPE_PRICE_BUSINESS": "optional Price ID for Business ($349/mo)",
-        },
-    }
-
-
 def _create_incident(payload: dict[str, Any], auth: dict[str, Any]) -> dict[str, Any]:
-    quota = accounts.check_incident_quota(auth["org_id"])
-    if not quota["allowed"]:
-        raise HTTPException(
-            status_code=402,
-            detail={
-                "error": "quota_exceeded",
-                "message": (
-                    f"Free tier limit of {quota['incidents_limit']} incidents/{quota['month']} "
-                    "reached. Upgrade via POST /billing/checkout-session."
-                ),
-                "plan": quota["plan"],
-                "incidents_used": quota["incidents_used"],
-                "incidents_limit": quota["incidents_limit"],
-                "month": quota["month"],
-                "upgrade": {"team": "$129/mo", "business": "$349/mo"},
-            },
-        )
     redacted = redact_incident(payload)
     pack = store.create(redacted)
     accounts.record_incident(auth["org_id"])

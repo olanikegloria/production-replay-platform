@@ -1,4 +1,4 @@
-"""Tests for auth, metering, and commercial stubs."""
+"""Tests for auth and product routes (no billing)."""
 
 from __future__ import annotations
 
@@ -24,7 +24,6 @@ def client(tmp_path, monkeypatch):
     accounts.tokens.clear()
     accounts.load()
 
-    # Fresh incident store bound to temp dir
     import app.store as store_mod
     import app.main as main_mod
 
@@ -39,6 +38,8 @@ def test_landing_and_app_routes(client):
     r = client.get("/")
     assert r.status_code == 200
     assert b"ReplaySafe" in r.content or b"redaction" in r.content.lower()
+    assert b"$129" not in r.content
+    assert b"See pricing" not in r.content
 
     assert client.get("/app").status_code == 200
     assert client.get("/legal/terms").status_code == 200
@@ -75,7 +76,7 @@ def test_demo_token_creates_redacted_incident(client):
     assert client.post(f"/incidents/{iid}/replay-scaffold", headers=headers).status_code == 200
 
 
-def test_signup_checkout_and_free_quota(client):
+def test_signup_login_and_incident_without_billing(client):
     signup = client.post(
         "/auth/signup",
         json={
@@ -87,7 +88,7 @@ def test_signup_checkout_and_free_quota(client):
     assert signup.status_code == 200
     token = signup.json()["token"]
     org_id = signup.json()["org_id"]
-    assert signup.json()["plan"] == "free"
+    assert "plan" not in signup.json()
     headers = {"Authorization": f"Bearer {token}"}
 
     login = client.post(
@@ -96,26 +97,17 @@ def test_signup_checkout_and_free_quota(client):
     )
     assert login.status_code == 200
 
-    month = accounts.usage_snapshot(org_id)["month"]
-    accounts.orgs[org_id]["usage"] = {month: {"incidents": 25}}
-    accounts._persist()
-
-    blocked = client.post(
+    created = client.post(
         "/incidents",
         headers=headers,
         json={"method": "GET", "path": "/x"},
     )
-    assert blocked.status_code == 402
-    assert blocked.json()["detail"]["error"] == "quota_exceeded"
+    assert created.status_code == 200
+    assert accounts.usage_snapshot(org_id)["incidents_used"] == 1
 
-    checkout = client.post(
-        "/billing/checkout-session",
-        headers=headers,
-        json={"plan": "team"},
-    )
-    assert checkout.status_code == 200
-    payload = checkout.json()
-    assert payload["mode"] == "stub"
-    assert payload["plan"] == "team"
-    assert "upgraded locally" in payload["message"]
-    assert accounts.orgs[org_id]["plan"] == "team"
+    assert client.get("/billing/usage", headers=headers).status_code == 404
+    assert client.post("/billing/checkout-session", headers=headers, json={"plan": "team"}).status_code == 404
+
+    usage = client.get("/usage", headers=headers)
+    assert usage.status_code == 200
+    assert usage.json()["incidents_used"] == 1

@@ -105,7 +105,6 @@
       <button class="secondary" id="btnSignup">Signup</button>
       <button class="secondary" id="btnLogin">Login</button>
       <button class="secondary" id="btnDemo">Use demo</button>
-      <button class="secondary" id="btnTeam">Upgrade Team (stub)</button>
     </div>
   </header>
   <main>
@@ -165,14 +164,13 @@
 
     async function refreshUsage() {
       try {
-        const res = await fetch("/billing/usage", { headers: authHeaders(false) });
+        const res = await fetch("/usage", { headers: authHeaders(false) });
         if (!res.ok) throw new Error();
         const u = await res.json();
-        const lim = u.incidents_limit == null ? "∞" : u.incidents_limit;
         document.getElementById("usageMeta").textContent =
-          `Plan ${u.plan} · incidents ${u.incidents_used}/${lim} (${u.month}) · token ${token.slice(0, 12)}…`;
+          `Incidents this month: ${u.incidents_used} (${u.month}) · token ${token.slice(0, 12)}…`;
       } catch {
-        document.getElementById("usageMeta").textContent = "Auth required for usage meter.";
+        document.getElementById("usageMeta").textContent = "Sign in or use demo token.";
       }
     }
 
@@ -220,17 +218,6 @@
       refreshUsage();
     }
 
-    async function upgradeTeam() {
-      const res = await fetch("/billing/checkout-session", {
-        method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify({ plan: "team" }),
-      });
-      const data = await res.json();
-      alert(data.message || JSON.stringify(data));
-      await refreshUsage();
-    }
-
     async function submit() {
       let body;
       try { body = JSON.parse(document.getElementById("payload").value); }
@@ -241,12 +228,6 @@
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (res.status === 402) {
-        document.getElementById("submitMeta").innerHTML =
-          `<span class="warn">Quota exceeded — upgrade via checkout stub.</span>`;
-        document.getElementById("out").textContent = JSON.stringify(data, null, 2);
-        return;
-      }
       document.getElementById("submitMeta").innerHTML =
         res.ok ? `<span class="ok">Stored ${data.incident.id} (redacted)</span>` : (data.detail || "failed");
       document.getElementById("out").textContent = JSON.stringify(data, null, 2);
@@ -286,7 +267,6 @@
     document.getElementById("btnSignup").onclick = signup;
     document.getElementById("btnLogin").onclick = login;
     document.getElementById("btnDemo").onclick = useDemo;
-    document.getElementById("btnTeam").onclick = upgradeTeam;
     refreshUsage();
     refresh();
   </script>
