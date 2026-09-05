@@ -3,78 +3,88 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ReplaySafe — App</title>
+  <title>ReplaySafe - App</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0c0e12;
-      --panel: #141820;
-      --text: #e8eaef;
-      --muted: #8b93a7;
-      --accent: #c9a227;
-      --accent-hover: #dbb43a;
-      --border: rgba(232, 234, 239, 0.1);
-      --border-strong: rgba(232, 234, 239, 0.16);
-      --ok: #3d9a7a;
-      --warn: #e07a6e;
-      --input: #0a0c10;
+      --bg: #0a1224;
+      --text: #e8edf7;
+      --muted: #8b96ad;
+      --accent: #ff4d4f;
+      --accent-hover: #ff7375;
+      --warn: #f5a524;
+      --ok: #52c41a;
+      --border: rgba(232, 237, 247, 0.12);
+      --border-strong: rgba(232, 237, 247, 0.2);
+      --input: #07101f;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: "DM Sans", system-ui, sans-serif;
-      background:
-        radial-gradient(ellipse 80% 45% at 50% -15%, rgba(201, 162, 39, 0.07), transparent),
-        var(--bg);
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      background: var(--bg);
       color: var(--text);
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
     }
+    .status-strip {
+      background: rgba(245, 165, 36, 0.12);
+      border-bottom: 1px solid rgba(245, 165, 36, 0.35);
+      color: var(--warn);
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      text-align: center;
+      padding: 0.4rem 1rem;
+    }
     .shell { width: min(1120px, calc(100% - 2rem)); margin: 0 auto; }
     header {
-      padding: 1.75rem 0 1.25rem;
+      padding: 1.35rem 0 1.1rem;
       border-bottom: 1px solid var(--border);
-      display: flex; flex-wrap: wrap; gap: 1.25rem; justify-content: space-between; align-items: flex-start;
+      display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: flex-start;
     }
-    header h1 { margin: 0; font-size: 1.35rem; letter-spacing: -0.03em; font-weight: 700; }
-    header p { margin: 0.4rem 0 0; color: var(--muted); font-size: 0.9rem; }
+    header h1 { margin: 0; font-size: 1.2rem; letter-spacing: -0.02em; font-weight: 700; }
+    header p { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.85rem; }
     .auth-box {
-      display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; font-size: 0.85rem;
+      display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; font-size: 0.8rem;
     }
     .auth-box input {
       background: var(--input); border: 1px solid var(--border-strong); color: var(--text);
-      border-radius: 6px; padding: 0.45rem 0.6rem; width: 9.5rem; font: inherit;
+      border-radius: 3px; padding: 0.4rem 0.55rem; width: 9rem; font: inherit;
     }
-    .auth-box input:focus { outline: none; border-color: var(--accent); }
+    .auth-box input:focus { outline: none; border-color: var(--warn); }
     main {
-      padding: 1.25rem 0 2.5rem;
-      display: grid; gap: 1rem; grid-template-columns: 1fr 1fr;
+      padding: 1rem 0 2rem;
+      display: grid; gap: 0.85rem; grid-template-columns: 1fr 1fr;
     }
     @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
     section {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1.1rem 1.2rem;
+      background: transparent;
+      border: none;
+      border-left: 3px solid var(--accent);
+      border-radius: 0;
+      padding: 0.85rem 1rem 0.95rem;
     }
+    section:nth-child(2) { border-left-color: var(--warn); }
     h2 {
-      margin: 0 0 0.85rem;
-      font-size: 0.72rem;
-      color: var(--muted);
+      margin: 0 0 0.7rem;
+      font-size: 0.68rem;
+      color: var(--warn);
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
       font-weight: 600;
     }
     button {
       background: var(--accent);
-      color: #0a0c10;
+      color: #fff;
       border: none;
-      border-radius: 8px;
-      padding: 0.55rem 1rem;
+      border-radius: 3px;
+      padding: 0.45rem 0.85rem;
       font-weight: 600;
-      font-size: 0.875rem;
+      font-size: 0.8rem;
       font-family: inherit;
       cursor: pointer;
       transition: background 0.15s ease;
@@ -83,44 +93,46 @@
     button.secondary {
       background: transparent; color: var(--text); border: 1px solid var(--border-strong);
     }
-    button.secondary:hover { border-color: var(--muted); }
+    button.secondary:hover { border-color: var(--warn); color: var(--warn); }
     button:disabled { opacity: 0.55; cursor: not-allowed; }
-    .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+    .row { display: flex; gap: 0.45rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
     textarea, select {
       width: 100%;
       background: var(--input);
       border: 1px solid var(--border-strong);
       color: var(--text);
-      border-radius: 8px;
-      padding: 0.65rem 0.75rem;
+      border-radius: 3px;
+      padding: 0.55rem 0.65rem;
       font-family: "JetBrains Mono", ui-monospace, monospace;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       line-height: 1.45;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.45rem;
     }
-    textarea:focus, select:focus { outline: none; border-color: var(--accent); }
-    select { font-family: "DM Sans", system-ui, sans-serif; font-size: 0.875rem; width: auto; min-width: 12rem; }
+    textarea:focus, select:focus { outline: none; border-color: var(--warn); }
+    select { font-family: inherit; font-size: 0.8rem; width: auto; min-width: 12rem; }
     pre {
       background: var(--input);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.85rem;
+      border-left: 2px solid var(--warn);
+      border-radius: 0;
+      padding: 0.75rem;
       overflow: auto;
       max-height: 420px;
       font-family: "JetBrains Mono", ui-monospace, monospace;
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       line-height: 1.5;
       white-space: pre-wrap;
       margin: 0;
     }
-    .meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .meta { color: var(--muted); font-size: 0.8rem; margin-bottom: 0.45rem; }
     .ok { color: var(--ok); }
-    .warn { color: var(--warn); }
-    a.nav { color: var(--muted); font-size: 0.85rem; text-decoration: none; }
+    .warn { color: var(--accent); }
+    a.nav { color: var(--muted); font-size: 0.8rem; text-decoration: none; }
     a.nav:hover { color: var(--text); }
   </style>
 </head>
 <body>
+  <div class="status-strip">REDACTION ACTIVE</div>
   <div class="shell">
     <header>
       <div>

@@ -21,11 +21,11 @@ def build_replay_scaffold(pack: dict[str, Any]) -> dict[str, Any]:
         },
         "expected_status": status,
         "logs": pack.get("logs") or [],
-        "notes": "Sanitized fixture — secrets already redacted at ingest.",
+        "notes": "Sanitized fixture - secrets already redacted at ingest.",
     }
 
     compose = f"""# Replay scaffold for incident {pack.get('id')}
-# Safe local scaffolding only — no live production traffic.
+# Safe local scaffolding only - no live production traffic.
 services:
   {service}:
     image: {service}:local
@@ -99,7 +99,7 @@ def build_brief(pack: dict[str, Any]) -> dict[str, Any]:
         summary = (
             f"Incident {pack.get('id')}: {method} {path} returned {status}. "
             f"Evidence from redacted pack only ({len(evidence)} facts). "
-            "No secrets included. (Ollama unavailable — template brief.)"
+            "No secrets included. (Ollama unavailable - template brief.)"
         )
         provider = "fallback"
         model = None
