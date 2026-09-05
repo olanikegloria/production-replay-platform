@@ -52,25 +52,64 @@ def build_brief(pack: dict[str, Any]) -> dict[str, Any]:
     status = pack.get("status_code") or pack.get("status") or "?"
     logs = pack.get("logs") or []
     log_lines = logs if isinstance(logs, list) else [str(logs)]
+    redaction_audit = pack.get("redaction_audit") or pack.get("redactions") or []
     evidence = [
         f"HTTP {method} {path} → {status}",
         f"headers_keys={sorted((pack.get('headers') or pack.get('request_headers') or {}).keys())}",
         f"body_present={pack.get('body') is not None}",
         f"log_count={len(log_lines)}",
+        f"redaction_events={len(redaction_audit) if isinstance(redaction_audit, list) else redaction_audit}",
     ]
     for line in log_lines[:5]:
         evidence.append(f"log: {line}")
 
-    summary = (
-        f"Incident {pack.get('id')}: {method} {path} returned {status}. "
-        f"Evidence from redacted pack only ({len(evidence)} facts). "
-        "No secrets included."
+    evidence_blob = json.dumps(
+        {
+            "pack": {
+                "id": pack.get("id"),
+                "method": method,
+                "path": path,
+                "status": status,
+                "headers": pack.get("headers") or pack.get("request_headers"),
+                "body": pack.get("body"),
+                "logs": log_lines[:20],
+                "redaction_audit": redaction_audit,
+            }
+        },
+        indent=2,
+        default=str,
     )
+
+    from . import ollama_client
+
+    ai = ollama_client.grounded_complete(
+        task=(
+            "Produce an incident investigation brief from this REDACTED pack only. "
+            "List likely cause, evidence bullets, and next debugging steps. "
+            "Never ask for or invent secrets."
+        ),
+        evidence=evidence_blob,
+    )
+
+    if ai.get("ok") and ai.get("text"):
+        summary = ai["text"]
+        provider = ai.get("provider")
+        model = ai.get("model")
+    else:
+        summary = (
+            f"Incident {pack.get('id')}: {method} {path} returned {status}. "
+            f"Evidence from redacted pack only ({len(evidence)} facts). "
+            "No secrets included. (Ollama unavailable — template brief.)"
+        )
+        provider = "fallback"
+        model = None
 
     return {
         "incident_id": pack.get("id"),
         "summary": summary,
         "evidence": evidence,
+        "ai_provider": provider,
+        "ai_model": model,
         "pack_excerpt": {
             "method": method,
             "path": path,
