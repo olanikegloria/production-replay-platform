@@ -4,130 +4,161 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ReplaySafe — App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #120f14;
-      --panel: #1d1822;
-      --text: #f0e8f2;
-      --muted: #a090a8;
-      --accent: #d4785a;
-      --border: #342a38;
-      --ok: #5ecf9a;
-      --warn: #e0a35a;
+      --bg: #0c0e12;
+      --panel: #141820;
+      --text: #e8eaef;
+      --muted: #8b93a7;
+      --accent: #c9a227;
+      --accent-hover: #dbb43a;
+      --border: rgba(232, 234, 239, 0.1);
+      --border-strong: rgba(232, 234, 239, 0.16);
+      --ok: #3d9a7a;
+      --warn: #e07a6e;
+      --input: #0a0c10;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: "Fraunces", "Georgia", serif;
-      background: radial-gradient(circle at 20% 0%, #2a1a22 0%, var(--bg) 45%);
+      font-family: "DM Sans", system-ui, sans-serif;
+      background:
+        radial-gradient(ellipse 80% 45% at 50% -15%, rgba(201, 162, 39, 0.07), transparent),
+        var(--bg);
       color: var(--text);
       min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
     }
+    .shell { width: min(1120px, calc(100% - 2rem)); margin: 0 auto; }
     header {
-      padding: 1.25rem 2rem 0.75rem;
+      padding: 1.75rem 0 1.25rem;
       border-bottom: 1px solid var(--border);
-      display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: flex-start;
+      display: flex; flex-wrap: wrap; gap: 1.25rem; justify-content: space-between; align-items: flex-start;
     }
-    header h1 { margin: 0; font-size: 1.45rem; font-weight: 600; }
-    header p { margin: 0.4rem 0 0; color: var(--muted); font-family: "Source Sans 3", sans-serif; }
+    header h1 { margin: 0; font-size: 1.35rem; letter-spacing: -0.03em; font-weight: 700; }
+    header p { margin: 0.4rem 0 0; color: var(--muted); font-size: 0.9rem; }
     .auth-box {
-      display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center;
-      font-size: 0.85rem; font-family: "Source Sans 3", sans-serif;
+      display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; font-size: 0.85rem;
     }
     .auth-box input {
-      background: #120e14; border: 1px solid var(--border); color: var(--text);
-      border-radius: 6px; padding: 0.4rem 0.55rem; width: 9.5rem; font: inherit;
+      background: var(--input); border: 1px solid var(--border-strong); color: var(--text);
+      border-radius: 6px; padding: 0.45rem 0.6rem; width: 9.5rem; font: inherit;
     }
+    .auth-box input:focus { outline: none; border-color: var(--accent); }
     main {
-      padding: 1rem 2rem 2rem;
-      display: grid;
-      gap: 1rem;
-      grid-template-columns: 1fr 1fr;
-      font-family: "Source Sans 3", sans-serif;
+      padding: 1.25rem 0 2.5rem;
+      display: grid; gap: 1rem; grid-template-columns: 1fr 1fr;
     }
     @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
     section {
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 1rem 1.15rem;
+      padding: 1.1rem 1.2rem;
     }
-    h2 { margin: 0 0 0.75rem; font-size: 1.05rem; font-family: "Fraunces", serif; }
+    h2 {
+      margin: 0 0 0.85rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
     button {
       background: var(--accent);
-      color: #1a0e0a;
+      color: #0a0c10;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 0.55rem 1rem;
-      font-weight: 700;
-      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.875rem;
       font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s ease;
     }
-    button.secondary { background: #3a2e40; color: var(--text); }
+    button:hover { background: var(--accent-hover); }
+    button.secondary {
+      background: transparent; color: var(--text); border: 1px solid var(--border-strong);
+    }
+    button.secondary:hover { border-color: var(--muted); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
     .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
     textarea, select {
       width: 100%;
-      background: #120e14;
-      border: 1px solid var(--border);
+      background: var(--input);
+      border: 1px solid var(--border-strong);
       color: var(--text);
-      border-radius: 6px;
-      padding: 0.55rem;
-      font: inherit;
+      border-radius: 8px;
+      padding: 0.65rem 0.75rem;
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+      font-size: 0.8rem;
+      line-height: 1.45;
       margin-bottom: 0.5rem;
     }
+    textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+    select { font-family: "DM Sans", system-ui, sans-serif; font-size: 0.875rem; width: auto; min-width: 12rem; }
     pre {
-      background: #120e14;
+      background: var(--input);
       border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.75rem;
+      border-radius: 8px;
+      padding: 0.85rem;
       overflow: auto;
-      max-height: 380px;
+      max-height: 420px;
+      font-family: "JetBrains Mono", ui-monospace, monospace;
       font-size: 0.78rem;
+      line-height: 1.5;
       white-space: pre-wrap;
+      margin: 0;
     }
     .meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
     .ok { color: var(--ok); }
     .warn { color: var(--warn); }
     a.nav { color: var(--muted); font-size: 0.85rem; text-decoration: none; }
+    a.nav:hover { color: var(--text); }
   </style>
 </head>
 <body>
-  <header>
-    <div>
-      <h1>Production Replay</h1>
-      <p>Submit → redact → pack / brief / scaffold. <a class="nav" href="/">← Landing</a></p>
-      <div class="meta" id="usageMeta">Usage: sign in or use demo token.</div>
-    </div>
-    <div class="auth-box">
-      <input id="email" placeholder="email" value="buyer@acme.dev" />
-      <input id="password" type="password" placeholder="password" value="demo-pass" />
-      <input id="org" placeholder="org" value="Acme Sec" />
-      <button class="secondary" id="btnSignup">Signup</button>
-      <button class="secondary" id="btnLogin">Login</button>
-      <button class="secondary" id="btnDemo">Use demo</button>
-    </div>
-  </header>
-  <main>
-    <section>
-      <h2>Submit sample incident</h2>
-      <div class="row">
-        <button id="btnSample">Load sample</button>
-        <button id="btnSubmit">Submit (redacted)</button>
+  <div class="shell">
+    <header>
+      <div>
+        <h1>ReplaySafe</h1>
+        <p>Submit → redact → pack / brief / scaffold. <a class="nav" href="/">← Landing</a></p>
+        <div class="meta" id="usageMeta">Usage: sign in or use demo token.</div>
       </div>
-      <textarea id="payload" rows="16"></textarea>
-      <div class="meta" id="submitMeta"></div>
-    </section>
-    <section>
-      <h2>Pack / brief / scaffold</h2>
-      <div class="row">
-        <select id="incidentSelect"></select>
-        <button class="secondary" id="btnRefresh">Refresh list</button>
-        <button id="btnBrief">Brief</button>
-        <button id="btnScaffold">Replay scaffold</button>
+      <div class="auth-box">
+        <input id="email" placeholder="email" value="buyer@acme.dev" />
+        <input id="password" type="password" placeholder="password" value="demo-pass" />
+        <input id="org" placeholder="org" value="Acme Sec" />
+        <button class="secondary" id="btnSignup">Signup</button>
+        <button class="secondary" id="btnLogin">Login</button>
+        <button class="secondary" id="btnDemo">Use demo</button>
       </div>
-      <pre id="out">Submit an incident to get started.</pre>
-    </section>
-  </main>
+    </header>
+    <main>
+      <section>
+        <h2>Submit sample incident</h2>
+        <div class="row">
+          <button id="btnSample">Load sample</button>
+          <button id="btnSubmit">Submit (redacted)</button>
+        </div>
+        <textarea id="payload" rows="16"></textarea>
+        <div class="meta" id="submitMeta"></div>
+      </section>
+      <section>
+        <h2>Pack / brief / scaffold</h2>
+        <div class="row">
+          <select id="incidentSelect"></select>
+          <button class="secondary" id="btnRefresh">Refresh list</button>
+          <button id="btnBrief">Brief</button>
+          <button id="btnScaffold">Replay scaffold</button>
+        </div>
+        <pre id="out">Submit an incident to get started.</pre>
+      </section>
+    </main>
+  </div>
   <script>
     const TOKEN_KEY = "replaysafe_token";
     let token = localStorage.getItem(TOKEN_KEY) || "demo";
@@ -222,18 +253,28 @@
       let body;
       try { body = JSON.parse(document.getElementById("payload").value); }
       catch (e) { alert("Invalid JSON"); return; }
-      const res = await fetch("/incidents", {
-        method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      document.getElementById("submitMeta").innerHTML =
-        res.ok ? `<span class="ok">Stored ${data.incident.id} (redacted)</span>` : (data.detail || "failed");
-      document.getElementById("out").textContent = JSON.stringify(data, null, 2);
-      await refresh();
-      await refreshUsage();
-      if (data.incident?.id) document.getElementById("incidentSelect").value = data.incident.id;
+      const btn = document.getElementById("btnSubmit");
+      btn.disabled = true;
+      document.getElementById("submitMeta").textContent = "Submitting…";
+      try {
+        const res = await fetch("/incidents", {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        document.getElementById("submitMeta").innerHTML =
+          res.ok ? `<span class="ok">Stored ${data.incident.id} (redacted)</span>` :
+            `<span class="warn">${data.detail || "failed"}</span>`;
+        document.getElementById("out").textContent = JSON.stringify(data, null, 2);
+        await refresh();
+        await refreshUsage();
+        if (data.incident?.id) document.getElementById("incidentSelect").value = data.incident.id;
+      } catch {
+        document.getElementById("submitMeta").innerHTML = `<span class="warn">Network error</span>`;
+      } finally {
+        btn.disabled = false;
+      }
     }
 
     async function refresh() {
@@ -249,15 +290,25 @@
     async function brief() {
       const id = document.getElementById("incidentSelect").value;
       if (!id) return;
-      const res = await fetch(`/incidents/${id}/brief`, { method: "POST", headers: authHeaders(false) });
-      document.getElementById("out").textContent = JSON.stringify(await res.json(), null, 2);
+      document.getElementById("out").textContent = "Loading brief…";
+      try {
+        const res = await fetch(`/incidents/${id}/brief`, { method: "POST", headers: authHeaders(false) });
+        document.getElementById("out").textContent = JSON.stringify(await res.json(), null, 2);
+      } catch {
+        document.getElementById("out").textContent = "Brief failed: network error";
+      }
     }
 
     async function scaffold() {
       const id = document.getElementById("incidentSelect").value;
       if (!id) return;
-      const res = await fetch(`/incidents/${id}/replay-scaffold`, { method: "POST", headers: authHeaders(false) });
-      document.getElementById("out").textContent = JSON.stringify(await res.json(), null, 2);
+      document.getElementById("out").textContent = "Loading scaffold…";
+      try {
+        const res = await fetch(`/incidents/${id}/replay-scaffold`, { method: "POST", headers: authHeaders(false) });
+        document.getElementById("out").textContent = JSON.stringify(await res.json(), null, 2);
+      } catch {
+        document.getElementById("out").textContent = "Scaffold failed: network error";
+      }
     }
 
     document.getElementById("btnSubmit").onclick = submit;
