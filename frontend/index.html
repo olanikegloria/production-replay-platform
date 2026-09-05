@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Production Replay Platform</title>
+  <style>
+    :root {
+      --bg: #120f14;
+      --panel: #1d1822;
+      --text: #f0e8f2;
+      --muted: #a090a8;
+      --accent: #d4785a;
+      --border: #342a38;
+      --ok: #5ecf9a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Fraunces", "Georgia", serif;
+      background: radial-gradient(circle at 20% 0%, #2a1a22 0%, var(--bg) 45%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header { padding: 1.5rem 2rem 0.75rem; border-bottom: 1px solid var(--border); }
+    header h1 { margin: 0; font-size: 1.45rem; font-weight: 600; }
+    header p { margin: 0.4rem 0 0; color: var(--muted); font-family: "Source Sans 3", sans-serif; }
+    main {
+      padding: 1rem 2rem 2rem;
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: 1fr 1fr;
+      font-family: "Source Sans 3", sans-serif;
+    }
+    @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+    section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.15rem;
+    }
+    h2 { margin: 0 0 0.75rem; font-size: 1.05rem; font-family: "Fraunces", serif; }
+    button {
+      background: var(--accent);
+      color: #1a0e0a;
+      border: none;
+      border-radius: 6px;
+      padding: 0.55rem 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    button.secondary { background: #3a2e40; color: var(--text); }
+    .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+    textarea, input, select {
+      width: 100%;
+      background: #120e14;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 0.55rem;
+      font: inherit;
+      margin-bottom: 0.5rem;
+    }
+    pre {
+      background: #120e14;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem;
+      overflow: auto;
+      max-height: 380px;
+      font-size: 0.78rem;
+      white-space: pre-wrap;
+    }
+    .meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .ok { color: var(--ok); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Production Replay</h1>
+    <p>Submit an HTTP incident → redact secrets → pack / brief / replay scaffold.</p>
+  </header>
+  <main>
+    <section>
+      <h2>Submit sample incident</h2>
+      <div class="row">
+        <button id="btnSample">Load sample</button>
+        <button id="btnSubmit">Submit (redacted)</button>
+      </div>
+      <textarea id="payload" rows="16"></textarea>
+      <div class="meta" id="submitMeta"></div>
+    </section>
+    <section>
+      <h2>Pack / brief / scaffold</h2>
+      <div class="row">
+        <select id="incidentSelect"></select>
+        <button class="secondary" id="btnRefresh">Refresh list</button>
+        <button id="btnBrief">Brief</button>
+        <button id="btnScaffold">Replay scaffold</button>
+      </div>
+      <pre id="out">Submit an incident to get started.</pre>
+    </section>
+  </main>
+  <script>
+    const SAMPLE = {
+      method: "POST",
+      path: "/api/checkout",
+      status_code: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.secret",
+        "X-Api-Key": "sk_live_abc123xyz",
+        "X-Request-Id": "req-42"
+      },
+      body: {
+        email: "alice@example.com",
+        password: "hunter2",
+        cart_id: "cart-9",
+        amount: 49.99
+      },
+      logs: [
+        "ERROR checkout failed for alice@example.com",
+        "Authorization=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.secret",
+        "api_key=sk_live_abc123xyz password=hunter2"
+      ],
+      metadata: { service: "checkout-api", version: "1.4.2" }
+    };
+
+    document.getElementById("btnSample").onclick = () => {
+      document.getElementById("payload").value = JSON.stringify(SAMPLE, null, 2);
+    };
+    document.getElementById("btnSample").click();
+
+    async function submit() {
+      let body;
+      try { body = JSON.parse(document.getElementById("payload").value); }
+      catch (e) { alert("Invalid JSON"); return; }
+      const res = await fetch("/incidents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      document.getElementById("submitMeta").innerHTML =
+        res.ok ? `<span class="ok">Stored ${data.incident.id} (redacted)</span>` : (data.detail || "failed");
+      document.getElementById("out").textContent = JSON.stringify(data, null, 2);
+      await refresh();
+      if (data.incident?.id) document.getElementById("incidentSelect").value = data.incident.id;
+    }
+
+    async function refresh() {
+      const res = await fetch("/incidents");
+      const data = await res.json();
+      const sel = document.getElementById("incidentSelect");
+      sel.innerHTML = (data.incidents || []).map(i =>
+        `<option value="${i.id}">${i.id} · ${i.method || "?"} ${i.path || ""}</option>`
+      ).join("") || `<option value="">(none)</option>`;
+    }
+
+    async function brief() {
+      const id = document.getElementById("incidentSelect").value;
+      if (!id) return;
+      const res = await fetch(`/incidents/${id}/brief`, { method: "POST" });
+      document.getElementById("out").textContent = JSON.stringify(await res.json(), null, 2);
+    }
+
+    async function scaffold() {
+      const id = document.getElementById("incidentSelect").value;
+      if (!id) return;
+      const res = await fetch(`/incidents/${id}/replay-scaffold`, { method: "POST" });
+      document.getElementById("out").textContent = JSON.stringify(await res.json(), null, 2);
+    }
+
+    document.getElementById("btnSubmit").onclick = submit;
+    document.getElementById("btnRefresh").onclick = refresh;
+    document.getElementById("btnBrief").onclick = brief;
+    document.getElementById("btnScaffold").onclick = scaffold;
+    refresh();
+  </script>
+</body>
+</html>

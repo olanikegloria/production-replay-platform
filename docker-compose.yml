@@ -1,0 +1,9 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8004:8004"
+    environment:
+      - DATA_DIR=/app/data/incidents
+    volumes:
+      - ./data:/app/data
